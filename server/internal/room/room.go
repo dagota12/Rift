@@ -32,6 +32,9 @@ type Room struct {
 	// done is closed to signal the room goroutine to stop.
 	done chan struct{}
 
+	// disconnectCh receives player IDs when a client disconnects.
+	disconnectCh chan string
+
 	onDone func(roomID string, playerIDs []string)
 }
 
@@ -45,10 +48,11 @@ type QueuedPlayer struct {
 // and returns the room so the matchmaker can route inputs to it.
 func StartAndReturn(players []QueuedPlayer, onDone func(roomID string, playerIDs []string)) *Room {
 	r := &Room{
-		ID:      uuid.NewString(),
-		inputCh: make(chan InputEnvelope, 128),
-		done:    make(chan struct{}),
-		onDone:  onDone,
+		ID:           uuid.NewString(),
+		inputCh:      make(chan InputEnvelope, 128),
+		disconnectCh: make(chan string, 16),
+		done:         make(chan struct{}),
+		onDone:       onDone,
 	}
 
 	for _, p := range players {
@@ -98,17 +102,16 @@ func (r *Room) broadcastGameStart() {
 	}
 }
 
-// watchDisconnects monitors all player connections. If any player disconnects,
-// the room is shut down. Phase 5 will handle graceful mid-game disconnection.
+// watchDisconnects monitors all player connections. If a player disconnects,
+// it notifies the gameLoop to handle elimination/forfeit gracefully.
 func (r *Room) watchDisconnects() {
 	for _, p := range r.players {
 		go func(c *transport.Client) {
 			<-c.Done()
 			log.Printf("player %s (%s) disconnected from room %s", c.ID, c.Name, r.ID)
 			select {
+			case r.disconnectCh <- c.ID:
 			case <-r.done:
-			default:
-				close(r.done)
 			}
 		}(p)
 	}

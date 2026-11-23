@@ -66,6 +66,32 @@ func (r *Room) gameLoop(world *game.World) {
 			r.broadcastGameOver(winner, reason, world)
 			return
 
+		case disconnectedID := <-r.disconnectCh:
+			log.Printf("room %s: player %s disconnected mid-game", r.ID, disconnectedID)
+			if p, ok := world.Players[disconnectedID]; ok {
+				p.Alive = false
+				p.HP = 0
+			}
+
+			// Broadcast elimination event to remaining players
+			r.broadcast(protocol.PlayerEliminatedMsg{
+				Type:       protocol.EventPlayerEliminated,
+				PlayerID:   disconnectedID,
+				ByPlayerID: "",
+			})
+
+			// If 1 or 0 survivors remain, conclude the match with a forfeit victory
+			alive := world.AliveCount()
+			if alive <= 1 {
+				winner := world.LastAlive()
+				reason := "opponent disconnected"
+				if alive == 0 {
+					reason = "all disconnected"
+				}
+				r.broadcastGameOver(winner, reason, world)
+				return
+			}
+
 		case <-r.done:
 			log.Printf("room %s game loop stopped", r.ID)
 			return
