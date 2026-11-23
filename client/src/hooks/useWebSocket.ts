@@ -22,8 +22,10 @@ export function useWebSocket() {
       return;
     }
 
+    const envUrl = import.meta.env.VITE_WS_URL;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname || 'localhost';
-    const wsUrl = `ws://${host}:${WS_PORT}/ws`;
+    const wsUrl = envUrl || `${protocol}//${host}:${WS_PORT}/ws`;
 
     try {
       const ws = new WebSocket(wsUrl);

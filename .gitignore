@@ -1,0 +1,18 @@
+# Node / Bun
+node_modules/
+dist/
+*.log
+
+# Go binaries
+server/server
+tests/sim_client
+/tmp/sim_client
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
