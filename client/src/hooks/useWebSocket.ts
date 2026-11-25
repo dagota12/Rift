@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useGameStore } from '../store/gameStore';
 import type { ServerMessage } from '../types/protocol';
+import { soundManager } from '../game/audio';
 
 const WS_PORT = 8087;
 
@@ -44,16 +45,21 @@ export function useWebSocket() {
               break;
             case 'game_start':
               handleGameStart(msg.roomId, msg.playerId, msg.players);
+              soundManager.playMatchFound();
               break;
             case 'snapshot':
               handleSnapshot(msg);
               break;
             case 'player_eliminated':
               handleElimination(msg.playerId, msg.byPlayerId);
+              soundManager.playExplosion();
               break;
-            case 'game_over':
+            case 'game_over': {
               handleGameOver(msg);
+              const myId = useGameStore.getState().myPlayerId;
+              soundManager.playGameOver(msg.winner === myId);
               break;
+            }
             default:
               break;
           }

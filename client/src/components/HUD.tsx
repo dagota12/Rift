@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { soundManager } from '../game/audio';
 
 export const HUD: React.FC = () => {
+  const [muted, setMuted] = useState(soundManager.getMuted());
   const {
     myPlayerId,
     currentSnapshot,
@@ -21,7 +23,7 @@ export const HUD: React.FC = () => {
 
   return (
     <div className="hud-overlay">
-      {/* Top Bar: Match Timer & Combatants Alive */}
+      {/* Top Bar: Match Timer, Combatants Alive, Health & Sound Toggle */}
       <div className="hud-top-bar">
         <div className="hud-stat-box">
           <span className="stat-label">PILOTS REMAINING</span>
@@ -50,6 +52,15 @@ export const HUD: React.FC = () => {
             ))}
           </div>
         </div>
+
+        <button
+          type="button"
+          className="hud-audio-btn"
+          onClick={() => setMuted(soundManager.toggleMute())}
+          title={muted ? 'Unmute Sound' : 'Mute Sound'}
+        >
+          {muted ? '🔇' : '🔊'}
+        </button>
       </div>
 
       {/* Kill Feed Notification (Top Right) */}
